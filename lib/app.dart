@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:keanggotaan/initial_binding.dart';
 
 import 'app/routes/app_pages.dart';
 
@@ -17,6 +18,7 @@ class App extends StatelessWidget {
       ),
       defaultTransition: Transition.cupertino,
       transitionDuration: const Duration(milliseconds: 300),
+      initialBinding: InitialBinding(),
       initialRoute: AppPages.INITIAL,
       getPages: AppPages.routes,
     );
