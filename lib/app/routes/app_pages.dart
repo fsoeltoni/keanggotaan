@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:keanggotaan/app/middlewares/auth_middleware.dart';
 
 import '../modules/create_account/bindings/create_account_binding.dart';
 import '../modules/create_account/views/create_account_view.dart';
@@ -23,6 +24,7 @@ class AppPages {
       name: _Paths.SIGN_IN,
       page: () => const SignInView(),
       binding: SignInBinding(),
+      middlewares: [AuthMiddleware()],
     ),
     GetPage(
       name: _Paths.OTP,
