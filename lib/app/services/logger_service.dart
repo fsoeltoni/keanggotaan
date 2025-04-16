@@ -1,11 +1,25 @@
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
+import 'package:logger/logger.dart';
 
 class LoggerService extends GetxService {
   static LoggerService get to => Get.find<LoggerService>();
 
   final FirebaseCrashlytics _crashlytics = FirebaseCrashlytics.instance;
+
+  // Initialize logger immediately instead of using late
+  final Logger _logger = Logger(
+    printer: PrettyPrinter(
+      methodCount: 2,
+      errorMethodCount: 8,
+      lineLength: 120,
+      colors: true,
+      printEmojis: true,
+      dateTimeFormat: DateTimeFormat.onlyTimeAndSinceStart,
+    ),
+    level: kDebugMode ? Level.trace : Level.warning,
+  );
 
   Future<LoggerService> init() async {
     // Konfigurasi Crashlytics
@@ -21,10 +35,10 @@ class LoggerService extends GetxService {
         return true;
       };
 
-      printInfo(info: 'Crashlytics service initialized');
+      _logger.i('Crashlytics service initialized');
     } else {
       await _crashlytics.setCrashlyticsCollectionEnabled(false);
-      printInfo(info: 'Crashlytics disabled in debug mode');
+      _logger.i('Crashlytics disabled in debug mode');
     }
 
     return this;
@@ -32,20 +46,17 @@ class LoggerService extends GetxService {
 
   // Method untuk log debug information
   void d(String message) {
-    if (kDebugMode) {
-      printInfo(info: '[DEBUG] $message');
-    }
+    _logger.d(message);
   }
 
   // Method untuk log informational messages
   void i(String message) {
-    printInfo(info: '[INFO] $message');
+    _logger.i(message);
   }
 
   // Method untuk log warning messages
   void w(String message) {
-    // Menggunakan printInfo dengan format warning
-    printInfo(info: '[WARNING] $message');
+    _logger.w(message);
     // Record non-fatal warning to Crashlytics
     if (!kDebugMode) {
       _crashlytics.log('[WARNING] $message');
@@ -54,8 +65,8 @@ class LoggerService extends GetxService {
 
   // Method untuk log error messages
   void e(String message, [dynamic error, StackTrace? stackTrace]) {
-    // Menggunakan printError dengan parameter bernama info
-    printError(info: '[ERROR] $message');
+    _logger.e(message, error: error, stackTrace: stackTrace);
+
     // Record error to Crashlytics
     if (!kDebugMode) {
       if (error != null) {
@@ -73,12 +84,17 @@ class LoggerService extends GetxService {
 
   // Method untuk log fatal error messages
   void f(String message, dynamic error, StackTrace stackTrace) {
-    // Menggunakan printError dengan parameter bernama info
-    printError(info: '[FATAL] $message');
+    _logger.f(message, error: error, stackTrace: stackTrace);
+
     // Record fatal error to Crashlytics
     if (!kDebugMode) {
       _crashlytics.recordError(error, stackTrace, reason: message, fatal: true);
     }
+  }
+
+  // Method untuk log trace information (replacing verbose)
+  void t(String message) {
+    _logger.t(message);
   }
 
   // Set user identifier untuk tracking di Crashlytics
