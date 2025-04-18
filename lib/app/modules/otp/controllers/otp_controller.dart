@@ -22,6 +22,7 @@ class OtpController extends GetxController {
   final RxString errorText = ''.obs;
   final RxBool isTimeout = false.obs;
   final RxBool isLoadingState = false.obs;
+  final RxBool isVerificationComplete = false.obs; // Added verification flag
   Timer? _timer;
 
   // Get the phone number from the previous screen
@@ -43,6 +44,9 @@ class OtpController extends GetxController {
     _logger = Get.find<LoggerService>();
     _authService = Get.find<AuthService>();
 
+    // Reset verification flag
+    isVerificationComplete.value = false;
+
     _logger.i('OtpController: Initialized for phone number $phoneNumber');
     _logger.setCustomKey('otp_phone_number', phoneNumber);
 
@@ -55,7 +59,8 @@ class OtpController extends GetxController {
 
     // Listen to timeout state from auth service
     ever(_authService.isTimeout, (timeout) {
-      if (timeout) {
+      if (timeout && !isVerificationComplete.value) {
+        // Check flag before timeout
         _logger.d(
           'OtpController: Received timeout notification from AuthService',
         );
@@ -156,8 +161,8 @@ class OtpController extends GetxController {
 
   // Resend OTP
   Future<void> resendOtp() async {
-    if (!canResend.value) {
-      _logger.w('OtpController: Attempted to resend OTP before timer expired');
+    if (!canResend.value || isVerificationComplete.value) {
+      _logger.w('OtpController: Invalid resend attempt');
       return;
     }
 
@@ -225,10 +230,8 @@ class OtpController extends GetxController {
 
   // Verify OTP
   Future<void> verifyOtp() async {
-    if (otp.value.length != 6) {
-      _logger.w(
-        'OtpController: Attempted verification with incomplete OTP (${otp.value.length} digits)',
-      );
+    if (otp.value.length != 6 || isVerificationComplete.value) {
+      _logger.w('OtpController: Invalid verification attempt');
       hasError.value = true;
       errorText.value = 'Mohon masukkan 6 digit kode OTP';
       return;
@@ -246,8 +249,8 @@ class OtpController extends GetxController {
         _logger.i('OtpController: OTP verification successful');
         _logger.setCustomKey('otp_verification_success', true);
 
-        // Cancel timer as it's no longer needed
-        _timer?.cancel();
+        isVerificationComplete.value = true; // Set verification flag
+        _timer?.cancel(); // Stop timer
 
         isLoadingState.value = false;
         Get.offAllNamed(Routes.VERIFICATION);
